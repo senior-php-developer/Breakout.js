@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang=en>
+<head>
+<title>Breakout</title>
+<link rel="stylesheet" href="http://cdn.airy.me/reset.css">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet/less" href="assets/css3.less">
+</head>
+<body>
+<div class="wrap">
+	<div id="side">
+		<div class="title"><h1>Breakout</h1></div>
+		<div class="chat">
+			<h2>Chat</h2>
+			<div class="text"></div>
+			<input type="text">
+		</div>
+		<div class="leaders">
+			<h2>Leaders</h2>
+			
+		
+		</div>
+	</div>
+	<div id="main">
+		<div class="status">
+			<span class="info"></span>
+			<div class="buttons">
+				<button class="btn skip hide">Skip turn</button>
+				<button class="btn quit hide">Quit game</button>	
+			</div>
+		</div>
+		<div id="game">
+			<canvas id="canvas" data-processing-sources="assets/game.pjs"></canvas>
+		</div>
+		<div class="social">
+			<div class="lt">
+				<a href="http://twitter.com/share" class="twitter-share-button" data-url="http://apps.facebook.com/airyhalma" data-text="Halma: HTML5 Facebook game -" data-count="horizontal" data-via="airyweb">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
+			</div>
+			<div class="clear"></div>
+			
+		</div>
+		
+	</div>
+	<div class="clear"></div>
+</div>
+<script src="http://cdn.airy.me/jquery.js"></script>
+<script src="http://cdn.airy.me/modernizr.js"></script>
+<script src="http://cdn.airy.me/less.js"></script>
+<script src="http://cdn.airy.me/processing.js"></script>
+<script src="assets/interface.js"></script>
+</body>
+</html>

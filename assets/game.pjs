@@ -1,0 +1,330 @@
+/* @pjs preload="assets/img/paddle.png"; */
+/* @pjs transparent="true"; */
+
+PImage iPaddle = loadImage("assets/img/paddle.png");
+PFont Arial = loadFont("Arial");
+Game game; Ball ball; Paddle paddle; Bricks bricks; Animate animation;
+var ctx = document.getElementById("canvas").getContext('2d');
+int psy = 1,
+		level,
+		FPS = 40;
+
+void setup(){
+  size(520, 450);
+  frameRate(FPS);
+	
+	game = new Game();
+	ball = new Ball();
+	paddle = new Paddle();
+	animation = new Animate();
+	
+	int MAXCOL = 12;
+	int MAXROW = 8;
+}
+
+void draw() {
+	bgGradient();
+	game.update();
+	animation.draw();
+}
+
+void bgGradient() {
+	var grad = ctx.createRadialGradient(width/2,height/2,30,width/2,height/2,width/2);  
+	var c = floor((sin(frameCount/50)+1)*50);
+  grad.addColorStop(0, 'hsl('+c+',40%,80%)');    
+  grad.addColorStop(1, 'hsl('+c+',50%,60%)');
+	ctx.fillStyle = grad;  
+  ctx.fillRect(0,0,width,height);	
+}
+
+void mouseClicked() {
+	if (game.state == 'starting') {
+		game.state = 'playing';
+		paddle.releaseBall();
+	}
+	if (game.state == 'mainMenu') game.mainMenuClick();
+}
+
+
+class Animate {
+	int i = 0;
+	var type = '';
+	var arg = '';
+	
+	void start(t) {
+		type = t;
+		i = 0;
+		switch(type) {
+			case 'start-countdown': initStartCountdown(); break;
+		
+		}
+	}
+	
+	void draw() {
+		i++;
+		switch(type) {
+			case 'start-countdown': drawStartCountdown(); break;
+		}
+	}
+	
+	void initStartCountdown() {
+		i = 20;
+		arg = "Go";
+		textFont(Arial, i);
+	}
+	
+	void drawStartCountdown() {
+		textSize(i*4);
+		fill(50);
+		text(arg, 260-i*3, 240+i);
+		if (i > 34) {
+			type = '';
+			game.state = 'starting';
+		}
+	}
+
+}
+
+class Game {
+	int controls = 0; // 0-mouse 1-keyboard
+	int lives = 3;
+	var state = 'mainMenu';
+	
+	void update() {
+		switch(state) {
+			case 'mainMenu': mainMenuUpdate(); break;
+			case 'intro': break;
+			case 'starting': updateGame(); break;
+			case 'playing': updateGame(); break;
+			case 'nextLevel': nextLevel(); break;
+			case 'gameOver': endGame();	break;
+		}
+	}
+	
+	void updateGame() {
+		noCursor();
+		paddle.update();
+		ball.update();
+		bricks.update();
+	} 
+		
+	void lost() {
+		lives--;
+		if (lives) {
+			ball.based = true;	
+			game.state = 'starting';
+		}
+		else state = 'gameOver';
+	}
+	
+	void endGame() {
+		textFont(Arial, 32);
+		fill(50);
+		text("You Lost", 180, 187);
+	}
+	
+	void start(c) {
+		level = 1;
+		bricks = new Bricks(3,5);
+		ball.based = true;
+		controls = c;
+		state = 'intro';		
+		animation.start('start-countdown');
+	}
+	
+	void nextLevel() {
+		level++;
+		bricks = new Bricks(3+level,5+2*level);
+		ball.based = true;
+		state = 'starting';
+	}
+	
+	void mainMenuUpdate() {
+		rect(130, 150, 200, 50);
+		rect(130, 250, 200, 50);
+		pushStyle();
+		fill(0, 102, 153);
+		textFont(Arial, 32);
+		text("Keyboard", 165, 187);
+		text("Mouse", 180, 287);
+		popStyle();
+	}
+	
+	void mainMenuClick() {
+		if (mouseX > 130 && mouseX < 330) {
+			if (mouseY > 150 && mouseY < 200) start(1);
+			if (mouseY > 250 && mouseY < 300) start(0);
+		}
+	}
+	
+	
+}
+
+class Ball {
+	float x = 0, y = 0, dx, dy, vel, nx, ny;
+	int size = 14;
+	boolean based = true;
+	var tail = [null,null,null];
+	
+	Ball() {
+		vel = 1;
+		dx = 0;
+		dy = 10 + level * 2;
+		x = 30, y = 0;
+	}
+	
+	void start() {
+		dx = 0;
+		dy = 5;
+		based = false;
+	}
+	
+	void update() {	
+		if (based) {
+			y = height - paddle.h - 6;
+			x = paddle.x + paddle.w /2;
+			nx = x;
+			ny = y;
+			tail[0] = {x:x, y:y};
+		} else {
+			if (nx > width || x + dx < 0)
+				dx = -dx;
+			if (ny < 0)
+				dy = -dy;
+			if (ny > height - paddle.h - 5) {		
+				if (x >= paddle.x - 5 && x <= paddle.x + paddle.w + 5) {   // hit paddle
+					dy = -dy;
+					dx = (x - paddle.x - paddle.w /2 ) / 10;
+				}	else	{
+					tail = [null,null,null,null,null];
+					game.lost();
+				}
+			}
+						
+			if (dy > 20) dy = 20;
+			if (dy < -20) dy = -20;
+			
+			tail.unshift({x:x, y:y});
+			tail.pop();
+			
+			nx = x + dx;
+			ny = y + dy;			
+						
+			x += dx; 
+			y += dy; 
+		}
+		
+		
+	
+		pushStyle();		
+		stroke(0,121,184);
+		fill(255);
+		for(var i=0; i<4; i++) {
+			if (tail[i] != null)
+				ellipse(tail[i].x,tail[i].y,size - i*2, size - i*2);	
+		}
+		popStyle();
+	}
+}
+
+class Paddle {
+	int h = 15, w = 70;
+	float x = width / 2;
+	int speed = 10;
+	
+	void update() {
+		if (game.controls) {
+			if (keyPressed) { // using keyboard
+				if (keyCode == RIGHT) x += speed;
+				if (keyCode == LEFT) x -= speed;
+				if (key == 32 && game.state == 'starting') releaseBall();
+				if (x < 0) x = 0;
+				if (x > width - w) x = width - w;
+			}
+		}	else {
+			int pos = mouseX;
+			if (x < pos - w) {
+				var dx = pos - w - x;
+				x += (dx / 5) + speed;
+			} else if (x > pos) {
+				var dx = x - pos;
+				x -= (dx / 5) + speed;
+			}
+		} 
+		image(iPaddle, x, height - h);	
+	}
+	
+	void releaseBall() {
+		speed = 10 + level * 2;
+		ball.start();
+	}	
+}
+
+class Bricks {
+	int rows, cols, padding;
+	int h = 26, w = 40;
+	var all;
+	
+	Bricks(r, c) {
+		all = [];
+		rows = r;
+		cols = c;
+		w = (width - 2) / c;
+		for(var i=0; i < rows; i++) {
+			all[i] = [];
+			for(var j=0; j < cols; j++) {
+				all[i][j] = 1;
+			}
+		}
+	}
+	
+	void update() {
+		float row = floor(ball.ny/h);
+		float col = floor((ball.nx - padding)/w);
+		if (row < rows && row >= 0 && col < cols && col >= 0 && all[row][col] == 1) {
+			coords = getCoords(row, col);
+			ball.dy = -ball.dy * (1 + level * 0.1);
+			if (ball.dy > 20) {
+				FPS++;
+				frameRate(FPS);
+			}
+			ball.dx = ball.dx * abs(sin(frameCount));
+			all[row][col] = 0;
+		}	
+		redraw();
+	}
+	
+	function getCoords(row, col) {
+		ret = {};
+		ret.x1 = col * w;
+		ret.x2 = ret.x1 + w;
+		ret.y1 = row * h;
+		ret.y2 = ret.y1 + h;
+		return ret;
+	}
+	
+	
+	
+	void redraw() {
+		var end = true;
+		colorMode(HSB, 100);
+		for(var i=0; i < rows; i++) {
+			for(var j=0; j < cols; j++) {
+				if (all[i][j] == 1) {
+					drawBrick(j,i);
+					end = false;
+				}
+			}
+		}
+		colorMode(RGB, 255);
+		if (end) game.state = 'nextLevel';
+	}
+	
+	void drawBrick(x,y) {
+		var c = floor((frameCount + 12*x) % 100);
+		fill(c,100,60);
+		rect(x*w+1,y*h,w,h);
+		
+	}
+
+}
